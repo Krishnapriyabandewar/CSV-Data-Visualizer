@@ -1,46 +1,44 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
-# Title of the application
-st.title("CSV Data Visualizer")
+st.title("CSV Data Visualization App")
 
-# Upload CSV file
+# Upload the file
 uploaded_file = st.file_uploader(r"C:\Users\Krishnapriya\Desktop\streamlit_csv_visualizer\gender_submission.csv", type=["csv"])
-
-# Check if a file is uploaded
-if uploaded_file is not None:
-    # Read the CSV file into a DataFrame
+if uploaded_file:
+    # Read and display the dataset
     df = pd.read_csv(uploaded_file)
-    st.write("Preview of Data", df.head())
+    st.write("### Data Preview", df.head())
 
-    # Chart selection
-    chart_type = st.selectbox("Select Chart Type", ["Line Chart", "Bar Chart", "Histogram"])
+    # Show dataset structure
+    st.write("### Data Information")
+    st.write(df.info())  # Show column types and non-null values
 
-    # Ensure DataFrame is not empty
-    if not df.empty:
-        if chart_type in ["Line Chart", "Bar Chart"]:
-            # Allow user to select a column
-            column = st.selectbox("Select a Column", df.select_dtypes(include=['float', 'int', 'object']).columns)
-            if df[column].dtype == 'object':
-                st.error("Selected column contains non-numeric data. Cannot generate chart.")
-            else:
-                # Generate the appropriate chart
-                if chart_type == "Line Chart":
-                    st.line_chart(df[column])
-                elif chart_type == "Bar Chart":
-                    st.bar_chart(df[column])
-        elif chart_type == "Histogram":
-            # Allow user to select a column and number of bins
-            column = st.selectbox("Select a Column", df.select_dtypes(include=['float', 'int']).columns)
-            bins = st.slider("Number of bins", 5, 50, 10)
+    st.write("### Descriptive Statistics")
+    st.write(df.describe())  # Statistics for numeric columns
 
-            # Plot histogram
-            plt.figure(figsize=(8, 5))
-            plt.hist(df[column], bins=bins, color="skyblue", edgecolor="black")
-            plt.xlabel(column)
-            plt.ylabel("Frequency")
-            plt.title(f"Histogram of {column}")
-            st.pyplot(plt)
-    else:
-        st.error("Uploaded file is empty.")
+    # Ensure only numeric columns are used for visualizations
+    numeric_columns = df.select_dtypes(include=["number"]).columns.tolist()
+    st.write("### Choose a Chart Type")
+    chart_type = st.selectbox("Chart Type", ["Line Chart", "Bar Chart", "Histogram"])
+
+    if chart_type == "Line Chart":
+        # Line chart typically used for time-series data, but here we can show a relationship between Survived and PassengerId (if meaningful)
+        st.line_chart(df[numeric_columns])
+
+    elif chart_type == "Bar Chart":
+        # Select a column for the bar chart: Focus on 'Survived' (1 = survived, 0 = not survived)
+        bar_column = st.selectbox("Select Column for Bar Chart", ["Survived"])  # Only 'Survived' is categorical
+        if bar_column:
+            bar_data = df[bar_column].value_counts()  # Count the number of survivors and non-survivors
+            st.bar_chart(bar_data)
+
+    elif chart_type == "Histogram":
+        # Let the user select a numeric column for the histogram: 'PassengerId' or 'Survived' (if meaningful)
+        column = st.selectbox("Select Numeric Column for Histogram", numeric_columns)
+        if column:
+            fig, ax = plt.subplots()
+            sns.histplot(df[column], kde=True, ax=ax)
+            st.pyplot(fig)
